@@ -1,1 +1,1 @@
-ArchBang Linux!
+Aylinux!
