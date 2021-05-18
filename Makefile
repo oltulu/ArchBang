@@ -2,38 +2,38 @@
 #  The directory that you'll be using for the actual build process.
 SHELL = /bin/sh
 WORKDIR=archbangftw
-#  A list of packages to install, either space separated in a string or line separated in a file. Can include groups.
+#  Yüklenecek paketlerin listesi, bir dizede ayrılmış alan veya bir dosyada ayrılmış satır. Grupları içerebilir.
 PACKAGES="$(shell cat packages.list packages.list.aur) syslinux"
-# The name of our ISO. Does not specify the architecture!
-NAME=archbang
-# Version will be appended to the ISO.
-VER=2010.09-apeiro-RC
-# Kernel version. You'll need this.
+# ISO dosyamızın adı. Mimariyi belirtmiyor!
+NAME=aylinux
+# ISO sürümü eklenecektir.
+VER=2021
+# Çekirdek sürümü. Buna ihtiyacın olacak.
 KVER=2.6.34-ARCH
-# Architecture will also be appended to the ISO name.
+# ISO adına mimari de eklenecektir. 
 ARCH?=$(shell uname -m)
-# Current working directory
+# Mevcut çalışma dizini 
 PWD:=$(shell pwd)
-# This is going to be the full name the final iso/img will carry
+# Bu son iso/img'nin taşıyacağı tam isim olacak 
 FULLNAME="$(PWD)"/$(NAME)-$(VER)-$(ARCH)
-# Default make instruction to build everything.
+# Varsayılan olarak, her şeyi oluşturmak için talimatlar oluşturun.
 all: archbang
 
 rem:
 	$(SHELL) "$(PWD)"/scripts/fetch-pkg.sh
 	
-# The following will first run the base-fs routine before creating the final iso image.
+#Aşağıdakiler ilk olarak son iso görüntüsünü oluşturmadan önce temel-fs rutinini çalıştıracaktır. 
 archbang: rem base-fs 
 	touch "$(FULLNAME)".iso
 	rm -r "$(FULLNAME)".iso
 	mkarchiso -v -p syslinux iso "$(WORKDIR)" "$(FULLNAME)".iso
 
-# This is the main rule for make the working filesystem. It will run routines from left to right. 
-# Thus, root-image is called first and syslinux is called last.
+# Bu, çalışan dosya sistemini yapmanın ana kuralıdır. Rutinleri soldan sağa doğru çalıştıracaktır. 
+# Böylelikle önce kök imajı ve son olarak syslinux adı verilir. 
 base-fs: root-image boot-files initcpio overlay iso-mounts syslinux
 
-# The root-image routine is always executed first. 
-# It only downloads and installs all packages into the $WORKDIR, giving you a basic system to use as a base.
+# Kök görüntü rutini her zaman önce yürütülür.  
+# Yalnızca tüm paketleri $WORKDIR'e indirip kurarak size temel olarak kullanabileceğiniz temel bir sistem sağlar. 
 root-image: "$(WORKDIR)"/root-image/.arch-chroot
 "$(WORKDIR)"/root-image/.arch-chroot:
 root-image:
@@ -44,7 +44,7 @@ boot-files:
 	cp -r "$(WORKDIR)"/root-image/boot "$(WORKDIR)"/iso/
 	cp -r boot-files/* "$(WORKDIR)"/iso/boot/
 
-# Rules for initcpio images
+# initcpio görüntüleri için kurallar 
 initcpio: "$(WORKDIR)"/iso/boot/archbang.img
 "$(WORKDIR)"/iso/boot/archbang.img: mkinitcpio.conf "$(WORKDIR)"/root-image/.arch-chroot
 	mkdir -p "$(WORKDIR)"/iso/boot
@@ -58,17 +58,17 @@ overlay:
 	wget -O "$(WORKDIR)"/overlay/etc/pacman.d/mirrorlist http://www.archlinux.org/mirrorlist/$(ARCH)/all/
 	sed -i "s/#Server/Server/g" "$(WORKDIR)"/overlay/etc/pacman.d/mirrorlist	
 #	chmod 0440 "$(WORKDIR)"/root-image/etc/sudoers
-# Rule to process isomounts file.
+# İsomounts dosyasını işleme kuralı. 
 iso-mounts: "$(WORKDIR)"/isomounts
 "$(WORKDIR)"/isomounts: isomounts root-image
 	sed "s|@ARCH@|$(ARCH)|g" isomounts > $@
 
-# This routine is always executed just before generating the actual image. 
+# Bu rutin her zaman gerçek görüntüyü oluşturmadan hemen önce yürütülür. 
 syslinux:
 	mkdir -p $(WORKDIR)/iso/boot/isolinux
 	cp $(WORKDIR)/root-image/usr/lib/syslinux/*.c32 $(WORKDIR)/iso/boot/isolinux/
 	cp $(WORKDIR)/root-image/usr/lib/syslinux/isolinux.bin $(WORKDIR)/iso/boot/isolinux/	
-# In case "make clean" is called, the following routine gets rid of all files created by this Makefile.
+# "Make clean" çağrılması durumunda, aşağıdaki rutin bu Makefile tarafından oluşturulan tüm dosyalardan kurtulacaktır. 
 clean:
 	rm -rf "$(WORKDIR)" "$(FULLNAME)".img "$(FULLNAME)".iso
 
