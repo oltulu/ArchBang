@@ -2,12 +2,12 @@
 
 # Check if we're root before going ahead
 if [ `whoami` != 'root' ]; then
-	zenity --info --text="Installer needs to be run with root privileges.\nUse \"sudo ab-install\"."
+	zenity --info --text="Yükleyicinin root ayrıcalıklarıyla çalıştırılması gerekiyor.\nKullan \"sudo ab-install\" kullanın."
 	exit
 fi
 
 ANSWER="/tmp/.setup"
-TITLE="ArchBang Linux Installation"
+TITLE="Aylinux Yükleyicisi"
 # use the first VT not dedicated to a running console
 LOG="/dev/tty7"
 DESTDIR="/mnt"
@@ -189,7 +189,7 @@ findpartitions() {
 
 get_grub_map() {
     rm /tmp/dev.map
-    DIALOG --infobox "Generating GRUB device map...\nThis could take a while.\n\n Please be patient." 0 0
+    DIALOG --infobox "GRUB cihaz haritası oluşturuluyor...\nBu biraz zaman alabilir.\n\nLütfen sabırlı olun." 0 0
     $DESTDIR/sbin/grub --no-floppy --device-map /tmp/dev.map >/tmp/grub.log 2>&1 <<EOF
 quit
 EOF
@@ -241,7 +241,7 @@ mapdev() {
             echo "$grubdevice,$pnum)"
         fi
     else
-        echo "DEVICE NOT FOUND"
+        echo "CİHAZ BULUNAMADI"
     fi
 }
 
@@ -258,8 +258,8 @@ printk()
 # sets EDITOR global variable
 #
 geteditor() {
-    DIALOG --menu "Select a Text Editor to Use" 10 35 3 \
-        "1" "nano (easier)" \
+    DIALOG --menu "Kullanılacak bir Metin Düzenleyicisi seçin" 10 35 3 \
+        "1" "nano (daha kolay)" \
         "2" "vi" 2>$ANSWER
     case $(cat $ANSWER) in
         "1") EDITOR="nano" ;;
@@ -292,13 +292,13 @@ _mkfs() {
         if [ "${_domk}" = "yes" ]; then
             mkswap ${_device} >$LOG 2>&1
             if [ $? != 0 ]; then
-                DIALOG --msgbox "Error creating swap: mkswap ${_device}" 0 0
+                DIALOG --msgbox "Takas oluşturulurken hata meydana geldi: mkswap ${_device}" 0 0
                 return 1
             fi
         fi
         swapon ${_device} >$LOG 2>&1
         if [ $? != 0 ]; then
-            DIALOG --msgbox "Error activating swap: swapon ${_device}" 0 0
+            DIALOG --msgbox "Takas etkinleştirilirken hata oluştu: swapon ${_device}" 0 0
             return 1
         fi
     else
@@ -308,7 +308,7 @@ _mkfs() {
             [ "${_fstype}" = "${fs}" ] && knownfs=1 && break
         done
         if [ $knownfs -eq 0 ]; then
-            DIALOG --msgbox "unknown fstype ${_fstype} for ${_device}" 0 0
+            DIALOG --msgbox "bilinmeyen  fstype ${_fstype} for ${_device}" 0 0
             return 1
         fi
         # if we were tasked to create the filesystem, do so
@@ -325,7 +325,7 @@ _mkfs() {
                 # don't handle anything else here, we will error later
             esac
             if [ $ret != 0 ]; then
-                DIALOG --msgbox "Error creating filesystem ${_fstype} on ${_device}" 0 0
+                DIALOG --msgbox "filesystem ${_fstype} üzerinde ${_device} oluşturma hatası" 0 0
                 return 1
             fi
             sleep 2
@@ -335,7 +335,7 @@ _mkfs() {
         # mount the bad boy
         mount -t ${_fstype} ${_device} ${_dest}${_mountpoint} >$LOG 2>&1
         if [ $? != 0 ]; then
-            DIALOG --msgbox "Error mounting ${_dest}${_mountpoint}" 0 0
+            DIALOG --msgbox "${_dest}${_mountpoint} bağlanma hatası" 0 0
             return 1
         fi
     fi
@@ -358,7 +358,7 @@ _mkfs() {
 # the destination root partition last!
 _umountall()
 {
-    DIALOG --infobox "Disabling swapspace, unmounting already mounted disk devices..." 0 0
+    DIALOG --infobox "Takas alanını devre dışı bırakılıyor, önceden takılı disk cihazlarının bağlantısı kesiliyor..." 0 0
     swapoff -a >/dev/null 2>&1
     umount $(mount | grep -v "${DESTDIR} " | grep "${DESTDIR}" | sed 's|\ .*||g') >/dev/null 2>&1
     umount $(mount | grep "${DESTDIR} " | sed 's|\ .*||g') >/dev/null 2>&1
@@ -387,12 +387,12 @@ _getavaildisks()
 
 autoprepare()
 {
-	zenity --question --text="NOT RECOMMENDED! Auto-prepare doesn't always work for all! \n\nPartition Manually using GPARTED or CFDISK instead.\n\nUse \"Auto-prepare\" anyway?" --ok-label="YES" --cancel-label="NO"
+	zenity --question --text="TAVSİYE EDİLMEZ!Otomatik hazırlık her zaman herkes için işe yaramaz! \n\nBunun yerine GPARTED veya CFDISK kullanarak Manuel olarak bölümlendirin.\n\nYine de \"Otomatik hazırla\" kullanılsın mı?" --ok-label="EVET" --cancel-label="HAYIR"
 if [ "$?" -eq "0" ]; then
     DISCS=$(finddisks)
     if [ $(echo $DISCS | wc -w) -gt 1 ]; then
-        DIALOG --msgbox "Available Disks:\n\n$(_getavaildisks)\n" 0 0
-        DIALOG --menu "Select the hard drive to use" 14 55 7 $(finddisks _) 2>$ANSWER || return 1
+        DIALOG --msgbox "Kullanılabilir Diskler:\n\n$(_getavaildisks)\n" 0 0
+        DIALOG --menu "Kullanılacak sabit sürücüyü seçin" 14 55 7 $(finddisks _) 2>$ANSWER || return 1
         DISC=$(cat $ANSWER)
     else
         DISC=$DISCS
@@ -410,13 +410,13 @@ if [ "$?" -eq "0" ]; then
         [ "$(which mkfs.xfs 2>/dev/null)" ]   && FSOPTS="$FSOPTS xfs XFS"
         [ "$(which mkfs.jfs 2>/dev/null)" ]   && FSOPTS="$FSOPTS jfs JFS"
         while [ "$BOOT_PART_SET" = "" ]; do
-            DIALOG --inputbox "Enter the size (MiB) of your /boot partition.  Minimum value is 16.\n\nDisk space left: $DISC_SIZE MiB" 10 65 "32" 2>$ANSWER || return 1
+            DIALOG --inputbox "/boot bölümünüzün boyutunu (MB) girin.  Minimum değer 16'dır.\n\nKalan disk alanı: $DISC_SIZE MiB" 10 65 "32" 2>$ANSWER || return 1
             BOOT_PART_SIZE="$(cat $ANSWER)"
             if [ "$BOOT_PART_SIZE" = "" ]; then
-                DIALOG --msgbox "ERROR: You have entered an invalid size, please enter again." 0 0
+                DIALOG --msgbox "HATA: Geçersiz bir boyut girdiniz, lütfen tekrar girin." 0 0
             else
                 if [ "$BOOT_PART_SIZE" -ge "$DISC_SIZE" -o "$BOOT_PART_SIZE" -lt "16" -o "$SBOOT_PART_SIZE" = "$DISC_SIZE" ]; then
-                    DIALOG --msgbox "ERROR: You have entered a too large size, please enter again." 0 0
+                    DIALOG --msgbox "HATA: Çok büyük bir boyut girdiniz, lütfen tekrar girin." 0 0
                 else
                     BOOT_PART_SET=1
                 fi
@@ -424,13 +424,13 @@ if [ "$?" -eq "0" ]; then
         done
         DISC_SIZE=$(($DISC_SIZE-$BOOT_PART_SIZE))
         while [ "$SWAP_PART_SET" = "" ]; do
-            DIALOG --inputbox "Enter the size (MiB) of your swap partition.  Minimum value is > 0.\n\nDisk space left: $DISC_SIZE MiB" 10 65 "256" 2>$ANSWER || return 1
+            DIALOG --inputbox "Takas bölümünüzün boyutunu (MiB) girin.  Minimum değer > 0.\n\nKalan disk alanı: $DISC_SIZE MB" 10 65 "256" 2>$ANSWER || return 1
             SWAP_PART_SIZE=$(cat $ANSWER)
             if [ "$SWAP_PART_SIZE" = "" -o  "$SWAP_PART_SIZE" -le "0" ]; then
-                DIALOG --msgbox "ERROR: You have entered an invalid size, please enter again." 0 0
+                DIALOG --msgbox "HATA: Geçersiz bir boyut girdiniz, lütfen tekrar girin." 0 0
             else
                 if [ "$SWAP_PART_SIZE" -ge "$DISC_SIZE" ]; then
-                    DIALOG --msgbox "ERROR: You have entered a too large size, please enter again." 0 0
+                    DIALOG --msgbox "HATA: Çok büyük bir boyut girdiniz, lütfen tekrar girin." 0 0
                 else
                     SWAP_PART_SET=1
                 fi
@@ -438,27 +438,27 @@ if [ "$?" -eq "0" ]; then
         done
         DISC_SIZE=$(($DISC_SIZE-$SWAP_PART_SIZE))
         while [ "$ROOT_PART_SET" = "" ]; do
-            DIALOG --inputbox "Enter the size (MiB) of your / partition.  The /home partition will use the remaining space.\n\nDisk space left:  $DISC_SIZE MiB" 10 65 "7500" 2>$ANSWER || return 1
+            DIALOG --inputbox "/ bölümünüzün boyutunu (MB) girin.  /home bölümü kalan alanı kullanacaktır.\n\nKalan disk alanı:  $DISC_SIZE MB" 10 65 "7500" 2>$ANSWER || return 1
             ROOT_PART_SIZE=$(cat $ANSWER)
             if [ "$ROOT_PART_SIZE" = "" -o "$ROOT_PART_SIZE" -le "0" ]; then
-                DIALOG --msgbox "ERROR: You have entered an invalid size, please enter again." 0 0
+                DIALOG --msgbox "HATA: Geçersiz bir boyut girdiniz, lütfen tekrar girin." 0 0
             else
                 if [ "$ROOT_PART_SIZE" -ge "$DISC_SIZE" ]; then
-                    DIALOG --msgbox "ERROR: You have entered a too large size, please enter again." 0 0
+                    DIALOG --msgbox "HATA: Çok büyük bir boyut girdiniz, lütfen tekrar girin." 0 0
                 else
-                    DIALOG --yesno "$(($DISC_SIZE-$ROOT_PART_SIZE)) MiB will be used for your /home partition.  Is this OK?" 0 0 && ROOT_PART_SET=1
+                    DIALOG --yesno "$(($DISC_SIZE-$ROOT_PART_SIZE)) MB, /home bölümünüz için kullanılacaktır.  Bu tamam mı?" 0 0 && ROOT_PART_SET=1
                 fi
             fi
         done
         while [ "$CHOSEN_FS" = "" ]; do
-            DIALOG --menu "Select a filesystem for / and /home:" 13 45 6 $FSOPTS 2>$ANSWER || return 1
+            DIALOG --menu "/ ve /home için bir dosya sistemi seçin:" 13 45 6 $FSOPTS 2>$ANSWER || return 1
             FSTYPE=$(cat $ANSWER)
-            DIALOG --yesno "$FSTYPE will be used for / and /home. Is this OK?" 0 0 && CHOSEN_FS=1
+            DIALOG --yesno "$FSTYPE / ve /home için kullanılacaktır. Bu tamam mı?" 0 0 && CHOSEN_FS=1
         done
         SET_DEFAULTFS=1
     done
 
-    DIALOG --defaultno --yesno "$DISC will be COMPLETELY ERASED!  Are you absolutely sure?" 0 0 \
+    DIALOG --defaultno --yesno "$DISC TAMAMEN SİLİNECEK! Kesinlikle emin misin?" 0 0 \
     || return 1
 
     DEVICE=$DISC
@@ -469,25 +469,25 @@ if [ "$?" -eq "0" ]; then
     PART_ROOT="${DEVICE}3"
 
     if [ "$S_MKFS" = "1" ]; then
-        DIALOG --msgbox "You have already prepared your filesystems manually" 0 0
+        DIALOG --msgbox "Dosya sistemlerinizi zaten manuel olarak hazırladınız" 0 0
         return 0
     fi
 
     # validate DEVICE
     if [ ! -b "$DEVICE" ]; then
-      DIALOG --msgbox "Device '$DEVICE' is not valid" 0 0
+      DIALOG --msgbox "'$DEVICE' aygıtı geçerli değil" 0 0
       return 1
     fi
 
     # validate DEST
     if [ ! -d "$DESTDIR" ]; then
-        DIALOG --msgbox "Destination directory '$DESTDIR' is not valid" 0 0
+        DIALOG --msgbox "'$DESTDIR' hedef dizini geçerli değil" 0 0
         return 1
     fi
 
     # / required
     if [ $(echo $FSSPECS | grep '/:' | wc -l) -ne 1 ]; then
-        DIALOG --msgbox "Need exactly one root partition" 0 0
+        DIALOG --msgbox "Bir kök bölümüne ihtiyacınız var" 0 0
         return 1
     fi
 
@@ -521,12 +521,12 @@ if [ "$?" -eq "0" ]; then
 
     # invoke sfdisk
     printk off
-    DIALOG --infobox "Partitioning $DEVICE" 0 0
+    DIALOG --infobox "$DEVICE bölümlendiriliyor" 0 0
     sfdisk $DEVICE -uM >$LOG 2>&1 <<EOF
 $sfdisk_input
 EOF
     if [ $? -gt 0 ]; then
-        DIALOG --msgbox "Error partitioning $DEVICE (see $LOG for details)" 0 0
+        DIALOG --msgbox "$DEVICE bölümlendirilemedi (detaylar için $LOG dosyasına bakınız)" 0 0
         printk on
         return 1
     fi
@@ -554,7 +554,7 @@ EOF
         part=$(($part + 1))
     done
 
-    DIALOG --msgbox "Auto-prepare was successful" 0 0
+    DIALOG --msgbox "Otomatik hazırlık başarılı oldu" 0 0
     S_MKFSAUTO=1
 else
 partition
@@ -569,10 +569,10 @@ if [ -n "$S_NEXTITEM" ]; then
 		DEFAULT=""
 	fi
 	DIALOG $DEFAULT --backtitle "$TITLE" --title " MAIN MENU " \
-                --menu "Use the UP and DOWN arrows to navigate menus.\nUse TAB to switch between buttons and ENTER to select." 17 58 13 \
-		"1" "Use CFdisk" \
-		"2" "Use GParted" \
-		"3" "Return to partition menu?" 2>$ANSWER
+                --menu "Menülerde gezinmek için YUKARI ve AŞAĞI okları kullanın.\nDüğmeler arasında geçiş yapmak için TAB tuşunu ve seçmek için ENTER tuşunu kullanın." 17 58 13 \
+		"1" "CFdisk Kullan" \
+		"2" "GParted Kullan" \
+		"3" "Bölümleme menüsüne dönülsün mü?" 2>$ANSWER
 	case $(cat $ANSWER) in
 		"1")
 			cfpartition
@@ -588,7 +588,7 @@ if [ -n "$S_NEXTITEM" ]; then
 
 cfpartition() {
     if [ "$S_MKFSAUTO" = "1" ]; then
-        DIALOG --msgbox "You have already prepared your filesystems with Auto-prepare" 0 0
+        DIALOG --msgbox "Otomatik hazırlama ile dosya sistemlerinizi zaten hazırladınız" 0 0
         return 0
     fi
 
@@ -596,21 +596,21 @@ cfpartition() {
 
     # Select disk to partition
     DISCS=$(finddisks _)
-    DISCS="$DISCS OTHER - DONE +"
-    DIALOG --msgbox "Available Disks:\n\n$(_getavaildisks)\n" 0 0
+    DISCS="$DISCS DİĞER - BİTTİ +"
+    DIALOG --msgbox "Kullanılabilir Diskler:\n\n$(_getavaildisks)\n" 0 0
     DISC=""
     while true; do
         # Prompt the user with a list of known disks
-        DIALOG --menu "Select the disk you want to partition (select DONE when finished)" 14 55 7 $DISCS 2>$ANSWER || return 1
+        DIALOG --menu "Bölümlemek istediğiniz diski seçin (bittiğinde BİTTİ'yi seçin)" 14 55 7 $DISCS 2>$ANSWER || return 1
         DISC=$(cat $ANSWER)
-        if [ "$DISC" = "OTHER" ]; then
-            DIALOG --inputbox "Enter the full path to the device you wish to partition" 8 65 "/dev/sda" 2>$ANSWER || return 1
+        if [ "$DISC" = "DİĞER" ]; then
+            DIALOG --inputbox "Bölümlemek istediğiniz cihazın tam yolunu girin" 8 65 "/dev/sda" 2>$ANSWER || return 1
             DISC=$(cat $ANSWER)
         fi
         # Leave our loop if the user is done partitioning
-        [ "$DISC" = "DONE" ] && break
+        [ "$DISC" = "BİTTİ" ] && break
         # Partition disc
-        DIALOG --msgbox "Now you'll be put into the cfdisk program where you can partition your hard drive. You should make a swap partition and as many data partitions as you will need.  NOTE: cfdisk may tell you to reboot after creating partitions.  If you need to reboot, just re-enter this install program, skip this step and go on to step 2." 18 70
+        DIALOG --msgbox "Şimdi, sabit sürücünüzü bölümlere ayırabileceğiniz cfdisk programına alınacaksınız. Bir takas bölümü ve ihtiyaç duyduğunuz kadar veri bölümü yapmalısınız. NOT: cfdisk, bölümleri oluşturduktan sonra yeniden başlatmanızı söyleyebilir. Yeniden başlatmanız gerekirse, bu kurulum programına yeniden girin, bu adımı atlayın ve 2. adıma geçin." 18 70
         cfdisk $DISC
     done
     S_PART=1
@@ -618,10 +618,10 @@ cfpartition() {
 
 mountpoints() {
     if [ "$S_MKFSAUTO" = "1" ]; then
-        DIALOG --msgbox "You have already prepared your filesystems with Auto-prepare" 0 0
+        DIALOG --msgbox "Otomatik hazırlama ile dosya sistemlerinizi zaten hazırladınız" 0 0
         return 0
     fi
-    while [ "$PARTFINISH" != "DONE" ]; do
+    while [ "$PARTFINISH" != "BİTTİ" ]; do
         : >/tmp/.fstab
         : >/tmp/.parts
 
@@ -633,34 +633,34 @@ mountpoints() {
         [ "$(which mkfs.vfat 2>/dev/null)" ]  && FSOPTS="$FSOPTS vfat VFAT"
 
         # Select mountpoints
-        DIALOG --msgbox "Available Disks:\n\n$(_getavaildisks)\n" 0 0
+        DIALOG --msgbox "Kullanılabilir Diskler:\n\n$(_getavaildisks)\n" 0 0
         PARTS=$(findpartitions _)
-        DIALOG --menu "Select the partition to use as swap" 21 50 13 NONE - $PARTS 2>$ANSWER || return 1
+        DIALOG --menu "Takas olarak kullanılacak bölümü seçin" 21 50 13 NONE - $PARTS 2>$ANSWER || return 1
         PART=$(cat $ANSWER)
         PARTS="$(echo $PARTS | sed -e "s#${PART}\ _##g")"
-        if [ "$PART" != "NONE" ]; then
+        if [ "$PART" != "YOK" ]; then
             DOMKFS="no"
-            DIALOG --yesno "Would you like to create a filesystem on $PART?\n\n(This will overwrite existing data!)" 0 0 && DOMKFS="yes"
+            DIALOG --yesno "$PART üzerinde bir dosya sistemi oluşturmak ister misiniz??\n\n(Bu, mevcut verilerin üzerine yazacak!)" 0 0 && DOMKFS="yes"
             echo "$PART:swap:swap:$DOMKFS" >>/tmp/.parts
         fi
 
-        DIALOG --menu "Select the partition to mount as /" 21 50 13 $PARTS 2>$ANSWER || return 1
+        DIALOG --menu "/ olarak bağlanacak bölümü seçin" 21 50 13 $PARTS 2>$ANSWER || return 1
         PART=$(cat $ANSWER)
         PARTS="$(echo $PARTS | sed -e "s#${PART}\ _##g")"
         PART_ROOT=$PART
         # Select root filesystem type
-        DIALOG --menu "Select a filesystem for $PART" 13 45 6 $FSOPTS 2>$ANSWER || return 1
+        DIALOG --menu "$PART için bir dosya sistemi seçin" 13 45 6 $FSOPTS 2>$ANSWER || return 1
         FSTYPE=$(cat $ANSWER)
         DOMKFS="no"
-        DIALOG --yesno "Would you like to create a filesystem on $PART?\n\n(This will overwrite existing data!)" 0 0 && DOMKFS="yes"
+        DIALOG --yesno "$PART üzerinde bir dosya sistemi oluşturmak ister misiniz?\n\n(Bu işlem, mevcut verilerin üzerine yazacak!)" 0 0 && DOMKFS="yes"
         echo "$PART:$FSTYPE:/:$DOMKFS" >>/tmp/.parts
 
         #
         # Additional partitions
         #
-        DIALOG --menu "Select any additional partitions to mount under your new root (select DONE when finished)" 21 50 13 $PARTS DONE _ 2>$ANSWER || return 1
+        DIALOG --menu "Yeni kökünüzün altına eklemek için herhangi bir ek bölüm seçin (tamamlandığında BİTTİ'yi seçin)" 21 50 13 $PARTS DONE _ 2>$ANSWER || return 1
         PART=$(cat $ANSWER)
-        while [ "$PART" != "DONE" ]; do
+        while [ "$PART" != "BİTTİ" ]; do
             PARTS="$(echo $PARTS | sed -e "s#${PART}\ _##g")"
             # Select a filesystem type
             DIALOG --menu "Select a filesystem for $PART" 13 45 6 $FSOPTS 2>$ANSWER || return 1
